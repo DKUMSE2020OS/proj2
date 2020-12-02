@@ -38,7 +38,7 @@ typedef struct Node{
 	struct Node* link;
 }Node;
 
-typedef struct {
+typedef struct free_PFN{
 	int count;
 	Node* top;
 }free_PFN;
@@ -87,6 +87,8 @@ int child_timing = 0;
 
 struct Run_q run_q; //CPU
 struct Run_q wait_q; //IO
+
+struct free_PFN PFN; //free PFN
 FILE* fp = NULL;
 
 struct page_frame_entry memory[64];
@@ -160,6 +162,12 @@ int main()
 			fprintf(fp, "child %d created, exec %d, timing %d\n", pids[i], burst, timing);
 			fflush(fp);
 		}
+	}
+
+	//set PFN
+	
+	for(int i =0; i<256; i++){
+	 	push(&PFN,i);
 	}
 
 	fprintf(fp, "total cpu burst time is %d\n", total_CPU_burst_time);
