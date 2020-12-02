@@ -166,9 +166,11 @@ int main()
 
 	//set PFN
 	
-	for(int i =0; i<256; i++){
+	for(int i =256; i>=0; i--){
 	 	push(&PFN,i);
 	}
+	for(int i =0; i<256; i++){
+		printf("%d\t",pop(&PFN));}
 
 	fprintf(fp, "total cpu burst time is %d\n", total_CPU_burst_time);
 	fflush(fp);
