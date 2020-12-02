@@ -33,6 +33,16 @@ typedef struct page_frame_entry{
 
 }page_frame_entry;
 
+typedef struct Node{
+	int data;
+	struct Node* link;
+}Node;
+
+typedef struct {
+	int count;
+	Node* top;
+}free_PFN;
+
 typedef struct p_PCB {
 	int pid;
 	int burst_time;
@@ -59,6 +69,11 @@ void add_queue_first(struct Run_q* run_q, int pid, int burst, int wait, int when
 void InitQueue(struct Run_q* run_q);
 int IsEmpty(struct Run_q* run_q);
 struct p_PCB* pop_queue(struct Run_q* run_q);
+
+void init(free_PFN* PFN);
+int empty(free_PFN* PFN);
+void push(free_PFN* PFN, int data);
+int pop(free_PFN* PFN);
 
 int pids[10]; //used in main
 int time_quantum[10]; //used in main
@@ -200,7 +215,7 @@ void signal_handler2(int signo)
 		struct msgbuf2 msg2;
 		memset(&msg2, 0, sizeof(msg2));
 		srand((unsigned int)time(NULL));
-		
+
 		for(int i=0; i <10; i++){
 			msg2.random_address[i] = rand() % 0xffff;
 		}
@@ -294,7 +309,7 @@ void add_queue(struct Run_q* run_q, int pid, int burst, int wait, int when, int 
 
 	struct p_PCB* newNode = malloc(sizeof(p_PCB));
 
-	
+
 	newNode->pid = pid;
 	newNode->burst_time = burst;
 	newNode->remaining_wait = wait;
@@ -358,4 +373,49 @@ int IsEmpty(struct Run_q* run_q) {
 	else
 		return 0;
 }
+// data structure function for free_PFN
 
+void init(free_PFN* PFN) {
+	PFN->top = NULL;
+	PFN->count = 0;
+}
+
+int empty(free_PFN* PFN)//공백상태
+{
+	if (PFN->top == NULL) {
+		return 1;
+	}
+	else
+		return 0;
+}
+
+void push(free_PFN* PFN, int data)
+{
+	Node* newptr = (Node*)malloc(sizeof(Node));
+
+	if (newptr == NULL) {
+		fprintf(stderr, "메모리 할당에러");
+	}
+	else {
+		newptr->data = data;
+		newptr->link = PFN->top;
+		PFN->top = newptr;
+		(PFN->count)++;
+	}
+}
+
+int pop(free_PFN* PFN) {
+	if (PFN->top == NULL) {
+		return -1;
+	}
+	else {
+		Node* newptr = (Node*)malloc(sizeof(Node));
+
+		newptr->link = PFN->top;
+		int data = PFN->top->data;
+		PFN->top = PFN->top->link;
+		(PFN->count)--;
+		free(newptr);
+		return data;
+	}
+}
