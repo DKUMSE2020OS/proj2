@@ -36,6 +36,7 @@ typedef struct page_frame_entry{
 typedef struct Node{
 	int data;
 	struct Node* link;
+	struct Node* b_link;
 }Node;
 
 typedef struct free_PFN{
@@ -76,6 +77,9 @@ int empty(free_PFN* PFN);
 void push(free_PFN* PFN, int data);
 int pop(free_PFN* PFN);
 
+struct Node* Search(free_PFN* LRU_S, int data);
+void Delete(free_PFN* LRU_S , Node* removenode);
+
 int pids[10]; //used in main
 int time_quantum[10]; //used in main
 int count = 0; //both used
@@ -90,13 +94,13 @@ struct Run_q run_q; //CPU
 struct Run_q wait_q; //IO
 
 struct free_PFN PFN; //free PFN
+struct free_PFN LRU_STACK; //LRU STACK
 FILE* fp = NULL;
 
 struct page_frame_entry memory[64];
 
 int main()
 {
-
 	fp = fopen("123.txt", "w");
 	if (fp == NULL) {
 		perror("can't make dump text");
@@ -145,7 +149,7 @@ int main()
 			   timing = io_when[i];
 			   child_timing = timing;
 			   write(fd1[1], &timing, sizeof(timing));
-			 */
+			   */
 			while (1);
 			exit(0);
 			// never reach here
@@ -175,11 +179,11 @@ int main()
 	for(int i =256; i>=0; i--){
 		push(&PFN,i);
 	}
-/*
-	for(int i =0; i<256; i++){
-		printf("%d\t",pop(&PFN));}
-	printf("\n");
-*/
+	/*
+	   for(int i =0; i<256; i++){
+	   printf("%d\t",pop(&PFN));}
+	   printf("\n");
+	   */
 	//fprintf(fp, "total cpu burst time is %d\n", total_CPU_burst_time);
 	printf("total cpu burst time is %d\n", total_CPU_burst_time);
 	fflush(fp);
@@ -236,7 +240,7 @@ void signal_handler2(int signo)
 	   ret = msgsnd(msgq, &msg, sizeof(msg), 0);
 	   }
 	   else if (count == (exec_time + wait)) {
-	 */
+	   */
 	if(count == exec_time){
 		exit(0);
 	}
@@ -262,7 +266,7 @@ void signal_handler(int signo)
 	}
 	w_PCB->remaining_wait -= 1;
 	}
-	 */
+	*/
 	//runq
 	if (!IsEmpty(&run_q)) {
 		struct p_PCB* r_PCB = malloc(sizeof(p_PCB));
@@ -293,7 +297,7 @@ void signal_handler(int signo)
 			}
 			else if (r_PCB->page_table[msg2.random_address[i]>>12].valid == 1){
 				//find physical address
-				 int result = ((r_PCB->page_table[msg2.random_address[i]>>12].frame_number)<<12)|(msg2.random_address[i]&0xfff);
+				int result = ((r_PCB->page_table[msg2.random_address[i]>>12].frame_number)<<12)|(msg2.random_address[i]&0xfff);
 				printf("-> 0x%x\n", result);
 
 				//계산
@@ -320,7 +324,7 @@ void signal_handler(int signo)
 		   r_PCB = pop_queue(&run_q);
 		   free(r_PCB);
 		   }
-		 */
+		   */
 		//enter waitq
 		/*
 		   else if ((r_PCB->io_timer == 0) & (r_PCB->state == 0)) {
@@ -335,21 +339,21 @@ void signal_handler(int signo)
 		   r_PCB = pop_queue(&run_q);
 		   add_queue(&wait_q, r_PCB->pid, r_PCB->burst_time, msg.io_time, r_PCB->io_timer, r_PCB->state);
 		   }
-		 */
+		   */
 
 		//time-quantum is 0
-		else if (r_PCB->time_quantum == 0) {
-			// fprintf(fp, "RUN _Q(%d) count: %d, tq: 0. go to end\n", target_pid, count);
-			printf("RUN _Q(%d) count: %d, tq: 0. go to end\n", target_pid, count);
-			r_PCB = pop_queue(&run_q);
-			add_queue2(&run_q, r_PCB->pid, r_PCB->burst_time, 0, r_PCB->io_timer, r_PCB->state, r_PCB->page_table);
-		}
-		//general case
-		else {
-			//   fprintf(fp, "RUN _Q(%d) count: %d, tq: %d.\n", target_pid, count, r_PCB->time_quantum);
-			printf("RUN _Q(%d) count: %d, tq: %d.\n", target_pid, count, r_PCB->time_quantum);
-			r_PCB->time_quantum -= 1;
-		}
+		   else if (r_PCB->time_quantum == 0) {
+			   // fprintf(fp, "RUN _Q(%d) count: %d, tq: 0. go to end\n", target_pid, count);
+			   printf("RUN _Q(%d) count: %d, tq: 0. go to end\n", target_pid, count);
+			   r_PCB = pop_queue(&run_q);
+			   add_queue2(&run_q, r_PCB->pid, r_PCB->burst_time, 0, r_PCB->io_timer, r_PCB->state, r_PCB->page_table);
+		   }
+		   //general case
+		   else {
+			   //   fprintf(fp, "RUN _Q(%d) count: %d, tq: %d.\n", target_pid, count, r_PCB->time_quantum);
+			   printf("RUN _Q(%d) count: %d, tq: %d.\n", target_pid, count, r_PCB->time_quantum);
+			   r_PCB->time_quantum -= 1;
+		   }
 
 	}
 	//end
@@ -370,7 +374,7 @@ void signal_handler(int signo)
 void add_queue(struct Run_q* run_q, int pid, int burst, int wait, int when, int state) {
 
 	struct p_PCB* newNode = malloc(sizeof(p_PCB));
-//	struct page_table_entry page = malloc(sizeof(page_table_entry));	
+	//	struct page_table_entry page = malloc(sizeof(page_table_entry));	
 
 	newNode->pid = pid;
 	newNode->burst_time = burst;
@@ -386,33 +390,33 @@ void add_queue(struct Run_q* run_q, int pid, int burst, int wait, int when, int 
 		run_q->rear->next = newNode;
 		run_q->rear = newNode;
 	}
-	
+
 	run_q->count++;
 }
 
 void add_queue2(struct Run_q* run_q, int pid, int burst, int wait, int when, int state, struct page_table_entry page[]) {
 
-        struct p_PCB* newNode = malloc(sizeof(p_PCB));
+	struct p_PCB* newNode = malloc(sizeof(p_PCB));
 
-        newNode->pid = pid;
-        newNode->burst_time = burst;
-        newNode->remaining_wait = wait;
-        newNode->next = NULL;
-        newNode->time_quantum = t_quantum;
-        newNode->state = state;
-        newNode->io_timer = when;
-        if (IsEmpty(run_q)) {
-                run_q->front = run_q->rear = newNode;
-        }
-        else {
-                run_q->rear->next = newNode;
-                run_q->rear = newNode;
-        }
-        for (int i = 0; i<16; i++){
-                newNode->page_table[i].valid = page[i].valid;
-                newNode->page_table[i].frame_number = page[i].frame_number;
-        }
-        run_q->count++;
+	newNode->pid = pid;
+	newNode->burst_time = burst;
+	newNode->remaining_wait = wait;
+	newNode->next = NULL;
+	newNode->time_quantum = t_quantum;
+	newNode->state = state;
+	newNode->io_timer = when;
+	if (IsEmpty(run_q)) {
+		run_q->front = run_q->rear = newNode;
+	}
+	else {
+		run_q->rear->next = newNode;
+		run_q->rear = newNode;
+	}
+	for (int i = 0; i<16; i++){
+		newNode->page_table[i].valid = page[i].valid;
+		newNode->page_table[i].frame_number = page[i].frame_number;
+	}
+	run_q->count++;
 }
 
 void add_queue_first(struct Run_q* run_q, int pid, int burst, int wait, int when, int state) {
@@ -481,14 +485,23 @@ void push(free_PFN* PFN, int data)
 	Node* newptr = (Node*)malloc(sizeof(Node));
 
 	if (newptr == NULL) {
-//		fprintf(stderr, "메모리 할당에러");
+		//		fprintf(stderr, "메모리 할당에러");
 		printf("memory error: push\n");
 	}
 	else {
-		newptr->data = data;
-		newptr->link = PFN->top;
-		PFN->top = newptr;
-		(PFN->count)++;
+		if(PFN->top ==NULL){
+			newptr->data = data;
+			newptr->link = PFN->top;
+			PFN->top = newptr;
+			(PFN->count)++;
+		}
+		else{
+			PFN->top->b_link = newptr;
+			newptr->data = data;
+			newptr->link = PFN->top;
+			PFN->top = newptr;
+			(PFN->count)++;
+		}
 	}
 }
 
@@ -507,3 +520,33 @@ int pop(free_PFN* PFN) {
 		return data;
 	}
 }
+struct Node* Search(free_PFN* LRU_S, int data){
+
+	if(LRU_S->top ==NULL){
+		return NULL;}
+	Node* newptr  = LRU_S -> top;
+
+	while(newptr->link ==NULL){
+		if(newptr->data==data)
+			return newptr;
+
+		newptr = newptr->link;
+
+	}
+
+	return NULL;
+}
+void Delete(free_PFN* LRU_S , Node* removenode){
+	
+	if(removenode == LRU_S->top){
+		LRU_S->top = removenode->link;
+		free(removenode);
+	}
+	else{
+		removenode->b_link = removenode->link;
+		free(removenode);
+	}
+}
+	
+
+
