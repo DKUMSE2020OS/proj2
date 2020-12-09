@@ -145,11 +145,6 @@ int main()
 			burst = time_quantum[i];
 			exec_time = burst;
 			write(fd[1], &burst, sizeof(burst));
-			/*
-			   timing = io_when[i];
-			   child_timing = timing;
-			   write(fd1[1], &timing, sizeof(timing));
-			   */
 			while (1);
 			exit(0);
 			// never reach here
@@ -158,13 +153,10 @@ int main()
 			// parent
 
 			close(fd[1]);
-			//			close(fd1[1]);
 			read(fd[0], &burst, sizeof(burst));
-			//			read(fd1[0], &timing, sizeof(timing));
 
 			total_CPU_burst_time = total_CPU_burst_time + burst;
 			pids[i] = ret;
-			//			add_queue(&run_q, pids[i], burst, 0, timing, 0);
 			add_queue(&run_q, pids[i], burst, 0, 0, 0);
 
 			//			fprintf(fp, "child %d created, exec %d, timing %d\n", pids[i], burst, timing);
@@ -179,11 +171,6 @@ int main()
 	for(int i =256; i>=0; i--){
 		push(&PFN,i);
 	}
-	/*
-	   for(int i =0; i<256; i++){
-	   printf("%d\t",pop(&PFN));}
-	   printf("\n");
-	   */
 	//fprintf(fp, "total cpu burst time is %d\n", total_CPU_burst_time);
 	printf("total cpu burst time is %d\n", total_CPU_burst_time);
 	fflush(fp);
@@ -225,22 +212,6 @@ void signal_handler2(int signo)
 		msg2.random_address[i] = rand() % 0xffff;
 	}
 	ret2 = msgsnd(msgq2, &msg2, sizeof(msg2),0);
-	/*
-	   if (count == child_timing) {
-	   wait = rand() % 4 + 1; //1~100
-	   int msgq;
-	   int ret;
-	   int key = 0x23456;
-	   msgq = msgget(key, IPC_CREAT | 0666);
-	   struct msgbuf msg;
-	   memset(&msg, 0, sizeof(msg));
-	   msg.pid = getpid();
-	   msg.io_time = wait;
-
-	   ret = msgsnd(msgq, &msg, sizeof(msg), 0);
-	   }
-	   else if (count == (exec_time + wait)) {
-	   */
 	if(count == exec_time){
 		exit(0);
 	}
@@ -252,21 +223,6 @@ void signal_handler(int signo)
 	int msgq;
 	int msgq2;
 
-	/*
-	//waitq
-	if (!IsEmpty(&wait_q)) {
-	struct p_PCB* w_PCB = malloc(sizeof(p_PCB));
-	w_PCB = wait_q.front;
-	int target_pid2 = w_PCB->pid;
-	fprintf(fp, "WAIT_Q(%d) remaining_io_time: %d\n", target_pid2, w_PCB->remaining_wait);
-	kill(target_pid2, SIGALRM);
-	if (w_PCB->remaining_wait == 0) {
-	w_PCB = pop_queue(&wait_q);
-	add_queue_first(&run_q, w_PCB->pid, w_PCB->burst_time, w_PCB->remaining_wait, w_PCB->io_timer, 1);
-	}
-	w_PCB->remaining_wait -= 1;
-	}
-	*/
 	//runq
 	if (!IsEmpty(&run_q)) {
 		struct p_PCB* r_PCB = malloc(sizeof(p_PCB));
@@ -318,28 +274,6 @@ void signal_handler(int signo)
 			r_PCB = pop_queue(&run_q);
 			free(r_PCB);
 		}
-		/*
-		   if ((r_PCB->burst_time == 0) & (r_PCB->state == 1)) {
-		   fprintf(fp, "RUN _Q(%d) count: %d, process end\n", target_pid, count);
-		   r_PCB = pop_queue(&run_q);
-		   free(r_PCB);
-		   }
-		   */
-		//enter waitq
-		/*
-		   else if ((r_PCB->io_timer == 0) & (r_PCB->state == 0)) {
-		   fprintf(fp, "RUN _Q(%d) count: %d, go to i.o\n", target_pid, count);
-		   int ret;
-		   int key = 0x23456;
-		   msgq = msgget(key, IPC_CREAT | 0666);
-
-		   struct msgbuf msg;
-		   memset(&msg, 0, sizeof(msg));
-		   ret = msgrcv(msgq, &msg, sizeof(msg), 0, 0);
-		   r_PCB = pop_queue(&run_q);
-		   add_queue(&wait_q, r_PCB->pid, r_PCB->burst_time, msg.io_time, r_PCB->io_timer, r_PCB->state);
-		   }
-		   */
 
 		//time-quantum is 0
 		   else if (r_PCB->time_quantum == 0) {
@@ -357,7 +291,6 @@ void signal_handler(int signo)
 
 	}
 	//end
-	//	if ((count == total_CPU_burst_time) && (IsEmpty(&run_q)) && (IsEmpty(&wait_q))) {
 	if (count == total_CPU_burst_time){
 		//fprintf(fp, "FINISHED\n");
 		printf("FINISHED\n");
