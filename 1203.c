@@ -42,6 +42,7 @@ typedef struct Node{
 typedef struct free_PFN{
 	int count;
 	Node* top;
+	Node* bottom;
 }free_PFN;
 
 typedef struct p_PCB {
@@ -76,6 +77,7 @@ void init(free_PFN* PFN);
 int empty(free_PFN* PFN);
 void push(free_PFN* PFN, int data);
 int pop(free_PFN* PFN);
+int pop_bottom(free_PFN* PFN);
 
 struct Node* Search(free_PFN* LRU_S, int data);
 void Delete(free_PFN* LRU_S , Node* removenode);
@@ -114,8 +116,6 @@ int main()
 	InitQueue(&wait_q);
 	for (int i = 0; i < 10; i++) {
 		pids[i] = 0;
-		//		time_quantum[i] = (rand() % 800) + 700; 
-		//		io_when[i] = (rand() % (time_quantum[i] - 700)) ; 
 		time_quantum[i] = (rand() % 50) + 20;
 	}
 	// child fork
@@ -223,6 +223,19 @@ void signal_handler(int signo)
 	int msgq;
 	int msgq2;
 
+	while(PFN.count < 30){
+		struct p_PCB* pcb = run_q.front;
+		int LRU_data = pop_bottom(&LRU_STACK);
+		for(int i =0; i<run_q.count; i++){
+			for(int j=0; j<16;j++){
+				if(pcb->page_table[j].frame_number==LRU_data){
+					pcb->page_table[j].valid=0;
+					break;
+				}
+			}
+			pcb = pcb->next;
+		}		
+	}
 	//runq
 	if (!IsEmpty(&run_q)) {
 		struct p_PCB* r_PCB = malloc(sizeof(p_PCB));
@@ -239,21 +252,43 @@ void signal_handler(int signo)
 		struct msgbuf2 msg2;
 		memset(&msg2, 0,sizeof(msg2));
 		ret2 = msgrcv(msgq2, &msg2, sizeof(msg2),0,0);
+
+
+		int pop_n =0;
+
 		for(int i =0; i<10; i++){
 			printf("0x%x",msg2.random_address[i]);
 			if(r_PCB->page_table[msg2.random_address[i]>>12].valid == 0){
 				//match new table page
 
-				r_PCB->page_table[msg2.random_address[i]>>12].frame_number=pop(&PFN);
+				pop_n = pop(&PFN);
+				r_PCB->page_table[msg2.random_address[i]>>12].frame_number=pop_n;
 				r_PCB->page_table[msg2.random_address[i]>>12].valid = 1;
 
 				//계산
 				int result = ((r_PCB->page_table[msg2.random_address[i]>>12].frame_number)<<12)|(msg2.random_address[i]&0xfff);
+
+				struct Node* push_LRU = Search(&LRU_STACK,pop_n);
+				if(push_LRU == NULL){
+					push(&LRU_STACK,pop_n);
+				}
+				else{
+					Delete(&LRU_STACK,push_LRU);
+					push(&LRU_STACK,pop_n);
+				}
 				printf("-> 0x%x\n", result);
 			}
 			else if (r_PCB->page_table[msg2.random_address[i]>>12].valid == 1){
 				//find physical address
 				int result = ((r_PCB->page_table[msg2.random_address[i]>>12].frame_number)<<12)|(msg2.random_address[i]&0xfff);
+				struct Node* push_LRU2 = Search(&LRU_STACK, r_PCB->page_table[msg2.random_address[i]>>12].frame_number);
+				if(push_LRU2==NULL){
+					push(&LRU_STACK,r_PCB->page_table[msg2.random_address[i]>>12].frame_number);
+				}
+				else{
+					Delete(&LRU_STACK,push_LRU2);
+					push(&LRU_STACK,r_PCB->page_table[msg2.random_address[i]>>12].frame_number);
+				}
 				printf("-> 0x%x\n", result);
 
 				//계산
@@ -276,18 +311,18 @@ void signal_handler(int signo)
 		}
 
 		//time-quantum is 0
-		   else if (r_PCB->time_quantum == 0) {
-			   // fprintf(fp, "RUN _Q(%d) count: %d, tq: 0. go to end\n", target_pid, count);
-			   printf("RUN _Q(%d) count: %d, tq: 0. go to end\n", target_pid, count);
-			   r_PCB = pop_queue(&run_q);
-			   add_queue2(&run_q, r_PCB->pid, r_PCB->burst_time, 0, r_PCB->io_timer, r_PCB->state, r_PCB->page_table);
-		   }
-		   //general case
-		   else {
-			   //   fprintf(fp, "RUN _Q(%d) count: %d, tq: %d.\n", target_pid, count, r_PCB->time_quantum);
-			   printf("RUN _Q(%d) count: %d, tq: %d.\n", target_pid, count, r_PCB->time_quantum);
-			   r_PCB->time_quantum -= 1;
-		   }
+		else if (r_PCB->time_quantum == 0) {
+			// fprintf(fp, "RUN _Q(%d) count: %d, tq: 0. go to end\n", target_pid, count);
+			printf("RUN _Q(%d) count: %d, tq: 0. go to end\n", target_pid, count);
+			r_PCB = pop_queue(&run_q);
+			add_queue2(&run_q, r_PCB->pid, r_PCB->burst_time, 0, r_PCB->io_timer, r_PCB->state, r_PCB->page_table);
+		}
+		//general case
+		else {
+			//   fprintf(fp, "RUN _Q(%d) count: %d, tq: %d.\n", target_pid, count, r_PCB->time_quantum);
+			printf("RUN _Q(%d) count: %d, tq: %d.\n", target_pid, count, r_PCB->time_quantum);
+			r_PCB->time_quantum -= 1;
+		}
 
 	}
 	//end
@@ -425,6 +460,7 @@ void push(free_PFN* PFN, int data)
 		if(PFN->top ==NULL){
 			newptr->data = data;
 			newptr->link = PFN->top;
+			PFN->bottom = newptr;
 			PFN->top = newptr;
 			(PFN->count)++;
 		}
@@ -453,6 +489,22 @@ int pop(free_PFN* PFN) {
 		return data;
 	}
 }
+int pop_bottom(free_PFN* PFN) {
+	if (PFN->top == NULL) {
+		return -1;
+	}
+	else {
+		Node* newptr = (Node*)malloc(sizeof(Node));
+
+		newptr->link = PFN->bottom;
+		int data = PFN->bottom->data;
+		PFN->bottom->b_link->link = NULL;
+		(PFN->count)--;
+		free(newptr);
+		return data;
+	}
+}
+
 struct Node* Search(free_PFN* LRU_S, int data){
 
 	if(LRU_S->top ==NULL){
@@ -470,7 +522,7 @@ struct Node* Search(free_PFN* LRU_S, int data){
 	return NULL;
 }
 void Delete(free_PFN* LRU_S , Node* removenode){
-	
+
 	if(removenode == LRU_S->top){
 		LRU_S->top = removenode->link;
 		free(removenode);
@@ -480,6 +532,6 @@ void Delete(free_PFN* LRU_S , Node* removenode){
 		free(removenode);
 	}
 }
-	
+
 
 
