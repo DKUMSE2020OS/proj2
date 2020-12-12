@@ -171,7 +171,7 @@ int main()
 
 	//set PFN
 
-	for(int i =255; i>=0; i--){
+	for(int i =127; i>=0; i--){
 		push(&PFN,i);
 	}
 	//fprintf(fp, "total cpu burst time is %d\n", total_CPU_burst_time);
@@ -226,21 +226,55 @@ void signal_handler(int signo)
 	int msgq;
 	int msgq2;
 
-	printf("count 30!!!!!!!!!!!\n");
-	while(PFN.count < 30){
-		struct p_PCB* pcb = run_q.front;
-		int LRU_data = pop_bottom(&LRU_STACK);
-		for(int i =0; i<run_q.count; i++){
-			for(int j=0; j<16;j++){
-				if(pcb->page_table[j].frame_number==LRU_data){
-					pcb->page_table[j].valid=0;
-					break;
-				}
-			}
-			pcb = pcb->next;
-		}		
-	}
+	 while(PFN.count < 30){
+                int flag = 0;
+                printf("numbers of free page number are under 30!!!!!!!!!!!\n");
 
+                struct p_PCB* pcb = run_q.front;
+		//실시간 LRU_STACK 확인
+//                        printf("0x%x ->",msg2.random_address[i]);
+                        struct Node* pp2 = malloc(sizeof(Node));
+                        pp2 = LRU_STACK.top;
+                        while(pp2 != NULL){
+                                printf("-%d", pp2->data);
+                                pp2 = pp2->link;
+                        }
+                        printf("\n         ");
+                        free(pp2);
+
+                int LRU_data = pop_bottom(&LRU_STACK);
+
+		//실시간 LRU_STACK 확인
+//                        printf("0x%x ->",msg2.random_address[i]);
+                        struct Node* pp3 = malloc(sizeof(Node));
+                        pp3 = LRU_STACK.top;
+                        while(pp3 != NULL){
+                                printf("-%d", pp3->data);
+                                pp3 = pp3->link;
+                        }
+                        printf("\n         ");
+                        free(pp3);
+
+		printf("LRU_data is %d\n", LRU_data);
+		printf("run_q.count is %d\n", run_q.count);
+                for(int i =0; i<run_q.count; i++){
+			printf("i is %d, ", i);
+                        for(int j=0; j<16;j++){
+				printf("j is %d, pcb->page_table.frame_number is %d,", j, pcb->page_table[j].frame_number);
+                                if(pcb->page_table[j].frame_number==LRU_data){
+					printf("correct!\n");
+					pcb->page_table[j].valid=0;
+                                        flag = 1;
+					push(&PFN, LRU_data);
+                                        break;
+                                }
+				printf("not correct\n");
+                        }
+                        if(flag==1){
+                                break;}
+                        pcb = pcb->next;
+                }
+        }	
 	//runq
 	if (!IsEmpty(&run_q)) {
 		struct p_PCB* r_PCB = malloc(sizeof(p_PCB));
@@ -517,7 +551,7 @@ int pop(free_PFN* PFN) {
 	}
 }
 int pop_bottom(free_PFN* PFN) {
-	if (PFN->top == NULL) {
+	if (PFN->bottom == NULL) {
 		return -1;
 	}
 	else {
@@ -526,6 +560,7 @@ int pop_bottom(free_PFN* PFN) {
 		newptr->link = PFN->bottom;
 		int data = PFN->bottom->data;
 		PFN->bottom->b_link->link = NULL;
+		PFN->bottom = PFN->bottom->b_link;
 		(PFN->count)--;
 		free(newptr);
 		return data;
@@ -561,6 +596,7 @@ void Delete(free_PFN* LRU_S , Node* removenode){
 			//end
 			else if((newptr->b_link != NULL)&(newptr->link == NULL)){
 				newptr->b_link->link = NULL;
+				LRU_S->bottom = newptr->b_link;
 			}
 			//TOP
 			else if ((newptr->b_link == NULL)&(newptr->link != NULL)){
