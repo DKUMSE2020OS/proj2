@@ -1,17 +1,9 @@
-fact1: file1.c file2.c
-	gcc	-o fact1 file1.c file2.c 
+TLP_MLFQ : TLP_MLFQ.o
+	gcc -o TLP_MLFQ TLP_MLFQ.o
 
-fact2: file1.o file2.o
-	gcc -o fact2 file1.o file2.o
+TLP_MLFQ.o : TLP_MLFQ.c
+	gcc -c -o TLP_MLFQ.o TLP_MLFQ.c
 
-file1.o: file1.c
-	gcc -c file1.c
+clean :
+	rm *.o TLP_MLFQ
 
-file2.o: file2.c
-	gcc -c file2.c
-
-%.o: %.c
-	gcc -c -o $@ $<
-
-fact3: file1.o file2.o
-	gcc -o $@ $^
