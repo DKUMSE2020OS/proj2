@@ -258,17 +258,17 @@ void signal_handler(int signo)
 		printf("LRU_data is %d\n", LRU_data);
 		printf("run_q.count is %d\n", run_q.count);
                 for(int i =0; i<run_q.count; i++){
-			printf("i is %d, ", i);
+//			printf("i is %d, ", i);
                         for(int j=0; j<16;j++){
-				printf("j is %d, pcb->page_table.frame_number is %d,", j, pcb->page_table[j].frame_number);
+//				printf("j is %d, pcb->page_table.frame_number is %d,", j, pcb->page_table[j].frame_number);
                                 if(pcb->page_table[j].frame_number==LRU_data){
-					printf("correct!\n");
+//					printf("correct!\n");
 					pcb->page_table[j].valid=0;
                                         flag = 1;
 					push(&PFN, LRU_data);
                                         break;
                                 }
-				printf("not correct\n");
+//				printf("not correct\n");
                         }
                         if(flag==1){
                                 break;}
