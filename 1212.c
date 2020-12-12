@@ -171,11 +171,7 @@ int main()
 
 	//set PFN
 
-<<<<<<< HEAD
-	for(int i =70; i>=0; i--){
-=======
 	for(int i =127; i>=0; i--){
->>>>>>> c66da6a08cc180972d6f78999cbc80d2cbf4d483
 		push(&PFN,i);
 	}
 	//fprintf(fp, "total cpu burst time is %d\n", total_CPU_burst_time);
@@ -229,28 +225,7 @@ void signal_handler(int signo)
 {
 	int msgq;
 	int msgq2;
-	int flag;
-	while(PFN.count < 10){
-		printf("numbers of free page number are under 30(%d)!!!!!!!!!!!\n",PFN.count);
 
-<<<<<<< HEAD
-		struct p_PCB* pcb = run_q.front;
-		int LRU_data = pop_bottom(&LRU_STACK);
-
-		for(int i =0; i<run_q.count; i++){
-			for(int j=0; j<16;j++){
-
-				if(pcb->page_table[j].frame_number==LRU_data){
-					pcb->page_table[j].valid=0;
-					push(&PFN,LRU_data);
-					break;
-				}
-			}
-		}	
-		pcb = pcb->next;
-	}
-
-=======
 	 while(PFN.count < 30){
                 int flag = 0;
                 printf("numbers of free page number are under 30!!!!!!!!!!!\n");
@@ -300,7 +275,6 @@ void signal_handler(int signo)
                         pcb = pcb->next;
                 }
         }	
->>>>>>> c66da6a08cc180972d6f78999cbc80d2cbf4d483
 	//runq
 	if (!IsEmpty(&run_q)) {
 		struct p_PCB* r_PCB = malloc(sizeof(p_PCB));
@@ -585,13 +559,8 @@ int pop_bottom(free_PFN* PFN) {
 
 		newptr->link = PFN->bottom;
 		int data = PFN->bottom->data;
-<<<<<<< HEAD
-		PFN->bottom = PFN->bottom->b_link;
-		PFN->bottom->link = NULL;
-=======
 		PFN->bottom->b_link->link = NULL;
 		PFN->bottom = PFN->bottom->b_link;
->>>>>>> c66da6a08cc180972d6f78999cbc80d2cbf4d483
 		(PFN->count)--;
 		free(newptr);
 		return data;
