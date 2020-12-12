@@ -280,7 +280,7 @@ void signal_handler(int signo)
 					Delete(&LRU_STACK,push_LRU);
 					push(&LRU_STACK,pop_n);
 				}
-				fprintf(fp, "0x%04x\n", result);
+				fprintf(fp, "0x%05x\n", result);
 			}
 			else if (r_PCB->page_table[msg2.random_address[i]>>12].valid == 1){
 				//find physical address
@@ -293,7 +293,7 @@ void signal_handler(int signo)
 					Delete(&LRU_STACK,push_LRU2);
 					push(&LRU_STACK,r_PCB->page_table[msg2.random_address[i]>>12].frame_number);
 				}
-				fprintf(fp, "0x%04x\n", result);
+				fprintf(fp, "0x%05x\n", result);
 
 				//계산
 			}
