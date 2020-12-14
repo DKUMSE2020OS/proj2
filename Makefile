@@ -1,17 +1,8 @@
-fact1: file1.c file2.c
-	gcc	-o fact1 file1.c file2.c 
+proj2: proj2.o
+	gcc -o proj2 proj2.o
 
-fact2: file1.o file2.o
-	gcc -o fact2 file1.o file2.o
+proj2.o: proj2.c
+	gcc -c -o proj2.o proj2.c
 
-file1.o: file1.c
-	gcc -c file1.c
-
-file2.o: file2.c
-	gcc -c file2.c
-
-%.o: %.c
-	gcc -c -o $@ $<
-
-fact3: file1.o file2.o
-	gcc -o $@ $^
+clean:
+	rm *.o proj2
